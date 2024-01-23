@@ -18,7 +18,7 @@ export async function POST(request: Request) {
     input: `${animal.title} - ${animal.about}`,
   });
 
-  console.log(`data: ${embeddingResponse.data[0].embedding}`)
+  // console.log(`data: ${embeddingResponse.data[0].embedding}`)
   // const [{ embedding }] = embeddingResponse.data;
   const embedding = embeddingResponse.data[0].embedding;
 
