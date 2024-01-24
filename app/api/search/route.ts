@@ -34,13 +34,13 @@ export async function POST(request: Request) {
   const embedding = embeddingResponse.data[0].embedding;
 
   // Search Supabase
-  const { data, error } = await supabaseClient.rpc("search_contents", {
+  const { error: mError, data: pageSections } = await supabaseClient.rpc("search_contents", {
     query_embedding: embedding,
     similarity_threshold: 0.75,
-    match_count: 2,
+    match_count: 1,
   });
 
-  if (error) {
+  if (mError) {
     // return NextResponse.json({ data });
     return NextResponse.json({ error: "Error searching with Supabase search_contents function" });
 
@@ -52,25 +52,30 @@ export async function POST(request: Request) {
 const tokenizer = new GPT3Tokenizer({ type: 'gpt3' })
 let tokenCount = 0
 let contextText = ''
+console.log(`Context length: ${pageSections.length}`)
 
 try {
-  for (let i = 0; i < data.length; i++) {
-    const pageSection = data[i]
-    const content = pageSection.content
+  for (let i = 0; i < pageSections.length; i++) {
+    const pageSection = pageSections[i]
+    const content = pageSection.about
+
     const encoded = tokenizer.encode(content)
     tokenCount += encoded.text.length
   
+
     if (tokenCount >= 1500) {
       break
     }
   
     contextText += `${content.trim()}\n---\n`
   }
-} catch {
-  console.log("Problem with gpt3-tokenizing!!!!!!")
+} catch(error) {
+  console.log(`Tokenizing problem: ${error}`)
 }
 
-console.log(`Ze data: ${data}`)
+for (const property in pageSections[0]) {
+  console.log(`${property}: ${pageSections[0][property]}`);
+}
 
 const prompt = `
     You are a very enthusiastic assistant who loves
@@ -82,7 +87,7 @@ const prompt = `
 
   Context sections:
   """
-  ${data}
+  ${contextText}
   """
 
   Question: """
